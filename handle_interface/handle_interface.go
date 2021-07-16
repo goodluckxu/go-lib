@@ -68,8 +68,8 @@ func getUniversalInterface(data interface{}, findField string) interface{} {
 				if newV == nil {
 					continue
 				}
-				if reflect.TypeOf(newV).Kind() == reflect.Slice ||
-					reflect.TypeOf(newV).Kind() == reflect.Array {
+				if len(findFieldList) > 2 && (reflect.TypeOf(newV).Kind() == reflect.Slice ||
+					reflect.TypeOf(newV).Kind() == reflect.Array) {
 					for _, val := range newV.([]interface{}) {
 						newData = append(newData, val)
 					}
