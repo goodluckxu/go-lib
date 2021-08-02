@@ -52,7 +52,7 @@ func GetInterface(data interface{}, findField string) interface{} {
 	dataByte, _ := json.Marshal(data)
 	var newData interface{}
 	_ = json.Unmarshal(dataByte, &newData)
-	return getUniversalInterface(data, findField)
+	return getUniversalInterface(newData, findField)
 }
 
 func getUniversalInterface(data interface{}, findField string) interface{} {
