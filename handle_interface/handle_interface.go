@@ -55,12 +55,18 @@ func GetInterface(data interface{}, findField string) interface{} {
 }
 
 func getUniversalInterface(data interface{}, findField string) interface{} {
+	if data == nil {
+		return data
+	}
 	findFieldList := strings.Split(findField, ".")
 	isArrayNum := isInt(findFieldList[0]) && isSlice(data)
 	if len(findFieldList) > 1 {
 		if findFieldList[0] == "*" {
 			newData := []interface{}{}
 			newDataList, _ := data.([]interface{})
+			if len(newDataList) == 0 {
+				return nil
+			}
 			for _, v := range newDataList {
 				newV := getUniversalInterface(
 					v, strings.Join(findFieldList[1:], "."))
@@ -85,6 +91,7 @@ func getUniversalInterface(data interface{}, findField string) interface{} {
 					return getUniversalInterface(
 						newDataList[num], strings.Join(findFieldList[1:], "."))
 				}
+				return nil
 			} else {
 				newDataMap, _ := data.(map[string]interface{})
 				return getUniversalInterface(
@@ -99,6 +106,7 @@ func getUniversalInterface(data interface{}, findField string) interface{} {
 				if len(newDataList) > int(num) {
 					return newDataList[num]
 				}
+				return nil
 			} else {
 				newDataMap, _ := data.(map[string]interface{})
 				return newDataMap[findFieldList[0]]
@@ -110,9 +118,7 @@ func getUniversalInterface(data interface{}, findField string) interface{} {
 
 // 修改内部数据
 func updateInsideInterface(data interface{}, findField string, updateValue string) interface{} {
-	dataByte, _ := json.Marshal(data)
-	var newData interface{}
-	_ = json.Unmarshal(dataByte, &newData)
+	newData := data
 	findFieldList := strings.Split(findField, ".")
 	updateValueList := strings.Split(updateValue, ".")
 	commonFieldList := []string{}
@@ -297,9 +303,6 @@ func delInterfaceField(data interface{}, findField string) interface{} {
 
 // 修改通用数据
 func updateUniversalInterface(data interface{}, findField string, updateValue interface{}) interface{} {
-	if updateValue == nil {
-		return data
-	}
 	findFieldList := strings.Split(findField, ".")
 	isArrayNum := isInt(findFieldList[0]) && isSlice(data)
 	if len(findFieldList) > 1 {
@@ -322,6 +325,7 @@ func updateUniversalInterface(data interface{}, findField string, updateValue in
 					newDataList[num] = updateUniversalInterface(
 						newDataList[num], strings.Join(findFieldList[1:], "."), updateValue)
 				}
+				data = newDataList
 			} else {
 				newDataMap, _ := data.(map[string]interface{})
 				if newDataMap == nil {
@@ -347,6 +351,7 @@ func updateUniversalInterface(data interface{}, findField string, updateValue in
 				if len(newDataList) > int(num) {
 					newDataList[num] = updateValue
 				}
+				data = newDataList
 			} else {
 				newDataMap, _ := data.(map[string]interface{})
 				if newDataMap == nil {
