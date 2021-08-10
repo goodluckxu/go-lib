@@ -2,7 +2,6 @@ package handle_interface
 
 import (
 	"encoding/json"
-	"reflect"
 	"strconv"
 	"strings"
 )
@@ -28,11 +27,11 @@ func UpdateInterface(data interface{}, updates []Rule) interface{} {
 	for _, update := range updates {
 		switch update.Type {
 		case "*":
-			updateValueType := reflect.TypeOf(update.UpdateValue).Kind()
-			if updateValueType == reflect.Func {
-				newData = updateInsideFunInterface(newData, update.FindField, update.UpdateValue.(func(value interface{}) interface{}))
-			} else {
+			switch update.UpdateValue.(type) {
+			case string:
 				newData = updateInsideInterface(newData, update.FindField, update.UpdateValue.(string))
+			case func(value interface{}) interface{}:
+				newData = updateInsideFunInterface(newData, update.FindField, update.UpdateValue.(func(value interface{}) interface{}))
 			}
 		case "_":
 			newData = delInterfaceField(newData, update.FindField)
@@ -57,20 +56,20 @@ func GetInterface(data interface{}, findField string) interface{} {
 
 func getUniversalInterface(data interface{}, findField string) interface{} {
 	findFieldList := strings.Split(findField, ".")
-	isArrayNum := isInt(findFieldList[0]) &&
-		(reflect.TypeOf(data).Kind() == reflect.Slice || reflect.TypeOf(data).Kind() == reflect.Array)
+	isArrayNum := isInt(findFieldList[0]) && isSlice(data)
 	if len(findFieldList) > 1 {
 		if findFieldList[0] == "*" {
 			newData := []interface{}{}
-			for _, v := range data.([]interface{}) {
+			newDataList, _ := data.([]interface{})
+			for _, v := range newDataList {
 				newV := getUniversalInterface(
 					v, strings.Join(findFieldList[1:], "."))
 				if newV == nil {
 					continue
 				}
-				if len(findFieldList) > 2 && (reflect.TypeOf(newV).Kind() == reflect.Slice ||
-					reflect.TypeOf(newV).Kind() == reflect.Array) {
-					for _, val := range newV.([]interface{}) {
+				if len(findFieldList) > 2 && isSlice(newV) {
+					nNewV, _ := newV.([]interface{})
+					for _, val := range nNewV {
 						newData = append(newData, val)
 					}
 				} else {
@@ -80,11 +79,14 @@ func getUniversalInterface(data interface{}, findField string) interface{} {
 			return newData
 		} else {
 			if isArrayNum {
-				num, _ := strconv.ParseInt(findFieldList[0], 10, 10)
-				return getUniversalInterface(
-					data.([]interface{})[num], strings.Join(findFieldList[1:], "."))
+				num, _ := strconv.ParseInt(findFieldList[0], 10, 64)
+				newDataList, _ := data.([]interface{})
+				if len(newDataList) > int(num) {
+					return getUniversalInterface(
+						newDataList[num], strings.Join(findFieldList[1:], "."))
+				}
 			} else {
-				newDataMap := data.(map[string]interface{})
+				newDataMap, _ := data.(map[string]interface{})
 				return getUniversalInterface(
 					newDataMap[findFieldList[0]], strings.Join(findFieldList[1:], "."))
 			}
@@ -92,10 +94,13 @@ func getUniversalInterface(data interface{}, findField string) interface{} {
 	} else {
 		if findFieldList[0] != "*" {
 			if isArrayNum {
-				num, _ := strconv.ParseInt(findFieldList[0], 10, 10)
-				return data.([]interface{})[num]
+				num, _ := strconv.ParseInt(findFieldList[0], 10, 64)
+				newDataList, _ := data.([]interface{})
+				if len(newDataList) > int(num) {
+					return newDataList[num]
+				}
 			} else {
-				newDataMap := data.(map[string]interface{})
+				newDataMap, _ := data.(map[string]interface{})
 				return newDataMap[findFieldList[0]]
 			}
 		}
@@ -161,7 +166,8 @@ func updateInsideCommonInterface(data interface{}, commonField string, list []st
 		} else {
 			childList = GetInterface(data, commonField)
 		}
-		num := len(childList.([]interface{}))
+		newChildList, _ := childList.([]interface{})
+		num := len(newChildList)
 		for i := 0; i < num; i++ {
 			strI := strconv.FormatInt(int64(i), 10)
 			newCommonField := strings.Replace(commonField, "*", strI, 1)
@@ -174,23 +180,32 @@ func updateInsideCommonInterface(data interface{}, commonField string, list []st
 // 修改内部数据，自身使用函数赋值
 func updateInsideFunInterface(data interface{}, findField string, updateValue func(value interface{}) interface{}) interface{} {
 	findFieldList := strings.Split(findField, ".")
-	isArrayNum := isInt(findFieldList[0]) &&
-		(reflect.TypeOf(data).Kind() == reflect.Slice || reflect.TypeOf(data).Kind() == reflect.Array)
+	isArrayNum := isInt(findFieldList[0]) && isSlice(data)
 	if len(findFieldList) > 1 {
 		if findFieldList[0] == "*" {
 			newData := []interface{}{}
-			for _, v := range data.([]interface{}) {
+			newDataList, _ := data.([]interface{})
+			if len(newDataList) == 0 {
+				newDataList = append(newDataList, nil)
+			}
+			for _, v := range newDataList {
 				newData = append(newData, updateInsideFunInterface(
 					v, strings.Join(findFieldList[1:], "."), updateValue))
 			}
 			data = newData
 		} else {
 			if isArrayNum {
-				num, _ := strconv.ParseInt(findFieldList[0], 10, 10)
-				data.([]interface{})[num] = updateInsideFunInterface(
-					data.([]interface{})[num], strings.Join(findFieldList[1:], "."), updateValue)
+				num, _ := strconv.ParseInt(findFieldList[0], 10, 64)
+				newDataList, _ := data.([]interface{})
+				if len(newDataList) > int(num) {
+					newDataList[num] = updateInsideFunInterface(
+						newDataList[num], strings.Join(findFieldList[1:], "."), updateValue)
+				}
 			} else {
-				newDataMap := data.(map[string]interface{})
+				newDataMap, _ := data.(map[string]interface{})
+				if newDataMap == nil {
+					newDataMap = map[string]interface{}{}
+				}
 				newDataMap[findFieldList[0]] = updateInsideFunInterface(
 					newDataMap[findFieldList[0]], strings.Join(findFieldList[1:], "."), updateValue)
 				data = newDataMap
@@ -198,17 +213,24 @@ func updateInsideFunInterface(data interface{}, findField string, updateValue fu
 		}
 	} else {
 		if findFieldList[0] == "*" {
-			newDataList := []interface{}{}
-			for _, v := range data.([]interface{}) {
-				newDataList = append(newDataList, updateValue(v))
+			newData := []interface{}{}
+			newDataList, _ := data.([]interface{})
+			for _, v := range newDataList {
+				newData = append(newData, updateValue(v))
 			}
-			data = newDataList
+			data = newData
 		} else {
 			if isArrayNum {
-				num, _ := strconv.ParseInt(findFieldList[0], 10, 10)
-				data.([]interface{})[num] = updateValue(data.([]interface{})[num])
+				num, _ := strconv.ParseInt(findFieldList[0], 10, 64)
+				newDataList, _ := data.([]interface{})
+				if len(newDataList) > int(num) {
+					newDataList[num] = updateValue(newDataList[num])
+				}
 			} else {
-				newDataMap := data.(map[string]interface{})
+				newDataMap, _ := data.(map[string]interface{})
+				if newDataMap == nil {
+					newDataMap = map[string]interface{}{}
+				}
 				newDataMap[findFieldList[0]] = updateValue(newDataMap[findFieldList[0]])
 				data = newDataMap
 			}
@@ -220,12 +242,12 @@ func updateInsideFunInterface(data interface{}, findField string, updateValue fu
 // 删除数据
 func delInterfaceField(data interface{}, findField string) interface{} {
 	findFieldList := strings.Split(findField, ".")
-	isArrayNum := isInt(findFieldList[0]) &&
-		(reflect.TypeOf(data).Kind() == reflect.Slice || reflect.TypeOf(data).Kind() == reflect.Array)
+	isArrayNum := isInt(findFieldList[0]) && isSlice(data)
 	if len(findFieldList) > 1 {
 		if findFieldList[0] == "*" {
 			newData := []interface{}{}
-			for _, v := range data.([]interface{}) {
+			newDataList, _ := data.([]interface{})
+			for _, v := range newDataList {
 				newData = append(newData, delInterfaceField(
 					v, strings.Join(findFieldList[1:], ".")))
 			}
@@ -233,10 +255,16 @@ func delInterfaceField(data interface{}, findField string) interface{} {
 		} else {
 			if isArrayNum {
 				num, _ := strconv.ParseInt(findFieldList[0], 10, 10)
-				data.([]interface{})[num] = delInterfaceField(
-					data.([]interface{})[num], strings.Join(findFieldList[1:], "."))
+				newDataList, _ := data.([]interface{})
+				if len(newDataList) > int(num) {
+					newDataList[num] = delInterfaceField(
+						newDataList[num], strings.Join(findFieldList[1:], "."))
+				}
 			} else {
-				newDataMap := data.(map[string]interface{})
+				newDataMap, _ := data.(map[string]interface{})
+				if newDataMap == nil {
+					newDataMap = map[string]interface{}{}
+				}
 				newDataMap[findFieldList[0]] = delInterfaceField(
 					newDataMap[findFieldList[0]], strings.Join(findFieldList[1:], "."))
 				data = newDataMap
@@ -247,9 +275,10 @@ func delInterfaceField(data interface{}, findField string) interface{} {
 			data = []interface{}{}
 		} else {
 			if isArrayNum {
-				num, _ := strconv.ParseInt(findFieldList[0], 10, 10)
+				num, _ := strconv.ParseInt(findFieldList[0], 10, 64)
 				newData := []interface{}{}
-				for k, v := range data.([]interface{}) {
+				newDataList, _ := data.([]interface{})
+				for k, v := range newDataList {
 					if int(num) == k {
 						continue
 					}
@@ -257,7 +286,7 @@ func delInterfaceField(data interface{}, findField string) interface{} {
 				}
 				data = newData
 			} else {
-				newDataMap := data.(map[string]interface{})
+				newDataMap, _ := data.(map[string]interface{})
 				delete(newDataMap, findFieldList[0])
 				data = newDataMap
 			}
@@ -268,24 +297,36 @@ func delInterfaceField(data interface{}, findField string) interface{} {
 
 // 修改通用数据
 func updateUniversalInterface(data interface{}, findField string, updateValue interface{}) interface{} {
+	if updateValue == nil {
+		return data
+	}
 	findFieldList := strings.Split(findField, ".")
-	isArrayNum := isInt(findFieldList[0]) &&
-		(reflect.TypeOf(data).Kind() == reflect.Slice || reflect.TypeOf(data).Kind() == reflect.Array)
+	isArrayNum := isInt(findFieldList[0]) && isSlice(data)
 	if len(findFieldList) > 1 {
 		if findFieldList[0] == "*" {
 			newData := []interface{}{}
-			for _, v := range data.([]interface{}) {
+			newDataList, _ := data.([]interface{})
+			if len(newDataList) == 0 {
+				newDataList = append(newDataList, nil)
+			}
+			for _, v := range newDataList {
 				newData = append(newData, updateUniversalInterface(
 					v, strings.Join(findFieldList[1:], "."), updateValue))
 			}
 			data = newData
 		} else {
 			if isArrayNum {
-				num, _ := strconv.ParseInt(findFieldList[0], 10, 10)
-				data.([]interface{})[num] = updateUniversalInterface(
-					data.([]interface{})[num], strings.Join(findFieldList[1:], "."), updateValue)
+				num, _ := strconv.ParseInt(findFieldList[0], 10, 64)
+				newDataList, _ := data.([]interface{})
+				if len(newDataList) > int(num) {
+					newDataList[num] = updateUniversalInterface(
+						newDataList[num], strings.Join(findFieldList[1:], "."), updateValue)
+				}
 			} else {
-				newDataMap := data.(map[string]interface{})
+				newDataMap, _ := data.(map[string]interface{})
+				if newDataMap == nil {
+					newDataMap = map[string]interface{}{}
+				}
 				newDataMap[findFieldList[0]] = updateUniversalInterface(
 					newDataMap[findFieldList[0]], strings.Join(findFieldList[1:], "."), updateValue)
 				data = newDataMap
@@ -293,17 +334,24 @@ func updateUniversalInterface(data interface{}, findField string, updateValue in
 		}
 	} else {
 		if findFieldList[0] == "*" {
-			newDataList := []interface{}{}
-			for i := 0; i < len(data.([]interface{})); i++ {
-				newDataList = append(newDataList, updateValue)
+			newData := []interface{}{}
+			newDataList, _ := data.([]interface{})
+			for i := 0; i < len(newDataList); i++ {
+				newData = append(newData, updateValue)
 			}
-			data = newDataList
+			data = newData
 		} else {
 			if isArrayNum {
-				num, _ := strconv.ParseInt(findFieldList[0], 10, 10)
-				data.([]interface{})[num] = updateValue
+				num, _ := strconv.ParseInt(findFieldList[0], 10, 64)
+				newDataList, _ := data.([]interface{})
+				if len(newDataList) > int(num) {
+					newDataList[num] = updateValue
+				}
 			} else {
-				newDataMap := data.(map[string]interface{})
+				newDataMap, _ := data.(map[string]interface{})
+				if newDataMap == nil {
+					newDataMap = map[string]interface{}{}
+				}
 				newDataMap[findFieldList[0]] = updateValue
 				data = newDataMap
 			}
@@ -318,4 +366,9 @@ func isInt(value string) bool {
 		return false
 	}
 	return true
+}
+
+func isSlice(value interface{}) bool {
+	_, ok := value.([]interface{})
+	return ok
 }
