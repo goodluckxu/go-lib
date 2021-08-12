@@ -118,7 +118,9 @@ func getUniversalInterface(data interface{}, findField string) interface{} {
 
 // 修改内部数据
 func updateInsideInterface(data interface{}, findField string, updateValue string) interface{} {
-	newData := data
+	dataByte, _ := json.Marshal(data)
+	var newData interface{}
+	_ = json.Unmarshal(dataByte, &newData)
 	findFieldList := strings.Split(findField, ".")
 	updateValueList := strings.Split(updateValue, ".")
 	commonFieldList := []string{}
