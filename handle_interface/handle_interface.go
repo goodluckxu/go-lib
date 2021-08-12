@@ -193,14 +193,9 @@ func updateInsideFunInterface(data interface{}, findField string, updateValue fu
 		if findFieldList[0] == "*" {
 			newData := []interface{}{}
 			newDataList, _ := data.([]interface{})
-			if len(newDataList) == 0 {
-				newDataList = append(newDataList, nil)
-			}
 			for _, v := range newDataList {
 				dataTmp := updateInsideFunInterface(v, strings.Join(findFieldList[1:], "."), updateValue)
-				if dataTmp != nil {
-					newData = append(newData, dataTmp)
-				}
+				newData = append(newData, dataTmp)
 			}
 			data = newData
 		} else {
@@ -313,14 +308,9 @@ func updateUniversalInterface(data interface{}, findField string, updateValue in
 		if findFieldList[0] == "*" {
 			newData := []interface{}{}
 			newDataList, _ := data.([]interface{})
-			if len(newDataList) == 0 {
-				newDataList = append(newDataList, nil)
-			}
 			for _, v := range newDataList {
 				dataTmp := updateUniversalInterface(v, strings.Join(findFieldList[1:], "."), updateValue)
-				if dataTmp != nil {
-					newData = append(newData, dataTmp)
-				}
+				newData = append(newData, dataTmp)
 			}
 			data = newData
 		} else {
