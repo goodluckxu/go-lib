@@ -121,6 +121,7 @@ func updateInsideInterface(data interface{}, findField string, updateValue strin
 	dataByte, _ := json.Marshal(data)
 	var newData interface{}
 	_ = json.Unmarshal(dataByte, &newData)
+	inputFindField := findField
 	findFieldList := strings.Split(findField, ".")
 	updateValueList := strings.Split(updateValue, ".")
 	commonFieldList := []string{}
@@ -156,7 +157,7 @@ func updateInsideInterface(data interface{}, findField string, updateValue strin
 			newData = updateUniversalInterface(newData, newFindField, GetInterface(data, newUpdateValue))
 		}
 	} else {
-		newData = updateUniversalInterface(newData, commonField+"."+findField, GetInterface(data, updateValue))
+		newData = updateUniversalInterface(newData, inputFindField, GetInterface(data, updateValue))
 	}
 	return newData
 }
