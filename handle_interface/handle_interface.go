@@ -156,7 +156,7 @@ func updateInsideInterface(data interface{}, findField string, updateValue strin
 			newData = updateUniversalInterface(newData, newFindField, GetInterface(data, newUpdateValue))
 		}
 	} else {
-		newData = updateUniversalInterface(newData, findField, GetInterface(data, updateValue))
+		newData = updateUniversalInterface(newData, commonField+"."+findField, GetInterface(data, updateValue))
 	}
 	return newData
 }
