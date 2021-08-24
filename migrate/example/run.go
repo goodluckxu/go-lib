@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	sqlList, err := migrate.GetSql("./sql/table.go", migrate.RunType.Up)
+	sqlList, err := migrate.GetSql("./table.go", migrate.RunType.Up)
 	if err != nil {
 		fmt.Println(err)
 		return

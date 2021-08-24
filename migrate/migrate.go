@@ -20,14 +20,14 @@ func DropTable(table string) {
 }
 
 func GetSql(filePath string, runType uint8) (sqlList []string, err error) {
-	fileContentByte, err := readAll(filePath)
+	fileContent := ""
+	fileContent, err = readAll(filePath)
 	if err != nil {
 		return
 	}
 	myLine := Line{
 		filePath: filePath,
 	}
-	fileContent := string(fileContentByte)
 	regString := `type *?(\w*?) *?struct *?\{(?s).*?\}`
 	reg := regexp.MustCompile(regString)
 	list := reg.FindAllStringSubmatch(fileContent, -1)
@@ -392,13 +392,22 @@ func getStructField(dest interface{}) map[string]interface{} {
 	return fieldMap
 }
 
-func readAll(filePth string) ([]byte, error) {
-	fi, err := os.Open(filePth)
+func readAll(filePath string) (string, error) {
+	fi, err := os.Open(filePath)
 	defer fi.Close()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return ioutil.ReadAll(fi)
+	by, err := ioutil.ReadAll(fi)
+	if err != nil {
+		return "", err
+	}
+	content := string(by)
+	reg := regexp.MustCompile(`//.*`)
+	content = reg.ReplaceAllString(content, "")
+	reg = regexp.MustCompile(`/\*(?s).*?\*/`)
+	content = reg.ReplaceAllString(content, "")
+	return content, nil
 }
 
 func Error(err string, args ...interface{}) error {

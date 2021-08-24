@@ -2,16 +2,29 @@ package main
 
 import "github.com/goodluckxu/go-lib/migrate"
 
-type Table struct {
+type MyTable struct {
 }
 
-func (t Table) Up() {
-	migrate.CreateTable("test", []migrate.Column{
-		{Field: "id", Type: migrate.Type.Int, Length: 10, Null: false, Comment: "主键", Unsigned: true, AutoIncrement: true},
-		{Field: "name", Type: migrate.Type.Varchar, Null: true, Default: "", Length: 20, Comment: "名称"},
+func (m MyTable) Up() {
+	migrate.CreateTable("user", []migrate.Column{
+		// 字段
+		{Field: "id", Type: migrate.Type.Int, Length: 10, Unsigned: true, AutoIncrement: true, Null: false,
+			Comment: "主键"},
+		{Field: "username", Type: migrate.Type.Varchar, Length: 255, Null: false, Default: "", Comment: "用户名"},
+		{Field: "nickname", Type: migrate.Type.Varchar, Length: 255, Null: true, Comment: "昵称"},
+		{Field: "account", Type: migrate.Type.Varchar, Length: 20, Null: false, Comment: "账号"},
+		{Field: "status", Type: migrate.Type.Tinyint, Length: 1, Null: false, Comment: "状态"},
+		{Field: "price", Type: migrate.Type.Decimal, Length: 10, DecimalPoint: 2, Null: false, Default: "0",
+			Comment: "价格"},
+		// 主键
 		{Field: "id", KeyType: migrate.KeyType.Primary},
-		{Field: "name", KeyType: migrate.KeyType.Unique, KeyFunc: migrate.KeyFunc.Btree},
-		{Key: "name", KeyType: migrate.KeyType.Foreign, KeyRelationTable: "user", KeyRelationField: "id,name"},
+		// 索引
+		{Field: "username", Key: "my_foreign", KeyType: migrate.KeyType.Normal},
+		{Field: "nickname", KeyType: migrate.KeyType.Fulltext},
+		{Field: "account,status", Key: "my_unique", KeyType: migrate.KeyType.Unique},
+		// 外键，添加外键必须先添加索引
+		{Key: "my_foreign", KeyType: migrate.KeyType.Foreign, KeyRelationTable: "center_user",
+			KeyRelationField: "nick_name"},
 	}, migrate.Args{
 		Engine:  "InnoDB",
 		Charset: "utf8mb4",
@@ -19,27 +32,34 @@ func (t Table) Up() {
 		Comment: "用户表",
 	})
 	migrate.DropTable("test")
-	migrate.ModifyTable("test", []migrate.Column{
-		{
-			AlterFieldType: migrate.AlterFieldType.Add,
-			Field:          "icon",
-			Type:           migrate.Type.Varchar,
-			Length:         255,
-			Comment:        "图标",
-		},
-		{AlterFieldType: migrate.AlterFieldType.Modify, Field: "icon", Type: migrate.Type.Varchar, Length: 255, Comment: "图标"},
-		{AlterFieldType: migrate.AlterFieldType.Change, Field: "icon", ChangeField: "icon_change", Type: migrate.Type.Varchar, Length: 255, Comment: "图标"},
+	migrate.ModifyTable("user_info", []migrate.Column{
+		// 添加字段
+		{AlterFieldType: migrate.AlterFieldType.Add, Field: "icon", Type: migrate.Type.Varchar, Length: 255,
+			Comment: "图标"},
+		// 修改字段，不能修改字段名
+		{AlterFieldType: migrate.AlterFieldType.Modify, Field: "icon", Type: migrate.Type.Varchar, Length: 255,
+			Comment: "图标"},
+		// 修改字段，可以修改字段名
+		{AlterFieldType: migrate.AlterFieldType.Change, Field: "icon", ChangeField: "icon_change",
+			Type: migrate.Type.Varchar, Length: 255, Comment: "图标"},
+		// 删除字段
 		{AlterFieldType: migrate.AlterFieldType.Drop, Field: "icon"},
-		{AlterFieldType: migrate.AlterFieldType.Modify, Field: "id", Type: migrate.Type.Int},
+		// 添加主键
+		{AlterKeyType: migrate.AlterKeyType.Add, Field: "id", KeyType: migrate.KeyType.Primary},
+		// 删除主键
 		{AlterKeyType: migrate.AlterKeyType.Drop, KeyType: migrate.KeyType.Primary},
-		{AlterKeyType: migrate.AlterKeyType.Drop, Key: "id"},
-		{AlterKeyType: migrate.AlterKeyType.Add, Field: "id", KeyType: migrate.KeyType.Normal},
+		// 添加索引
+		{AlterKeyType: migrate.AlterKeyType.Add, Field: "test", Key: "test_1", KeyType: migrate.KeyType.Unique},
+		// 删除索引
+		{AlterKeyType: migrate.AlterKeyType.Drop, Key: "test_1"},
+		// 添加外键
 		{AlterKeyType: migrate.AlterKeyType.Add, KeyType: migrate.KeyType.Foreign, Key: "name", KeyRelationTable: "admin",
 			KeyRelationField: "id", KeyConstraint: "aaa"},
+		// 删除外键
 		{AlterKeyType: migrate.AlterKeyType.Drop, KeyType: migrate.KeyType.Foreign, KeyConstraint: "aaa"},
 	})
 }
 
-func (t Table) Down() {
-	migrate.DropTable("aaa")
+func (m MyTable) Down() {
+	migrate.DropTable("user")
 }
