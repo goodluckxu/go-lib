@@ -124,6 +124,10 @@ func (v valid) validFieldCol() error {
 	if newCol["AutoIncrement"] != "" && newCol["AutoIncrement"] != "true" && newCol["AutoIncrement"] != "false" {
 		return Error("Column 'AutoIncrement' must be Boolean")
 	}
+	// 验证修改为第一字段为布尔
+	if newCol["AlterFieldFirst"] != "" && newCol["AlterFieldFirst"] != "true" && newCol["AlterFieldFirst"] != "false" {
+		return Error("Column 'AlterFieldFirst' must be Boolean")
+	}
 	return nil
 }
 
@@ -156,6 +160,10 @@ func (v valid) validLogicCol() error {
 	// 删除外键的时候
 	if newCol["AlterKeyType"] == "Drop" && newCol["KeyType"] == "FOREIGN" && newCol["KeyConstraint"] == "" {
 		return Error("Column 'KeyConstraint' must exist")
+	}
+	// 两个位置不能同时存在
+	if newCol["AlterFieldFirst"] != "" && newCol["AlterFieldAfter"] != "" {
+		return Error("Column 'AlterFieldFirst' and 'AlterFieldAfter' cannot exist at the same time")
 	}
 	return nil
 }

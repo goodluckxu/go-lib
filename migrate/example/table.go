@@ -35,10 +35,10 @@ func (m MyTable) Up() {
 	migrate.ModifyTable("user_info", []migrate.Column{
 		// 添加字段
 		{AlterFieldType: migrate.AlterFieldType.Add, Field: "icon", Type: migrate.Type.Varchar, Length: 255,
-			Comment: "图标"},
+			Comment: "图标", AlterFieldFirst: true},
 		// 修改字段，不能修改字段名
 		{AlterFieldType: migrate.AlterFieldType.Modify, Field: "icon", Type: migrate.Type.Varchar, Length: 255,
-			Comment: "图标"},
+			Comment: "图标", AlterFieldAfter: "id"},
 		// 修改字段，可以修改字段名
 		{AlterFieldType: migrate.AlterFieldType.Change, Field: "icon", ChangeField: "icon_change",
 			Type: migrate.Type.Varchar, Length: 255, Comment: "图标"},

@@ -149,8 +149,8 @@ CREATE TABLE `user` (
   CONSTRAINT `user_center_user_my_foreign` FOREIGN KEY (`my_foreign`) REFERENCES `center_user` (`nick_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT '用户表'
 DROP TABLE `test`
-ALTER TABLE `user_info` ADD COLUMN `icon` varchar(255) COMMENT '图标'
-ALTER TABLE `user_info` MODIFY COLUMN `icon` varchar(255) COMMENT '图标'
+ALTER TABLE `user_info` ADD COLUMN `icon` varchar(255) COMMENT '图标' FIRST
+ALTER TABLE `user_info` MODIFY COLUMN `icon` varchar(255) COMMENT '图标' AFTER `id`
 ALTER TABLE `user_info` CHANGE COLUMN `icon` `icon_change` varchar(255) COMMENT '图标'
 ALTER TABLE `user_info` DROP COLUMN `icon`
 ALTER TABLE `user_info` ADD PRIMARY KEY (`id`)

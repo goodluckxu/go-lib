@@ -17,6 +17,8 @@ type Column struct {
 	KeyRelationField string // 外键关联字段
 	KeyConstraint    string // 约束
 	AlterFieldType   uint8  // 字段操作类型
+	AlterFieldFirst  bool   // 将字段修改为第一个字段
+	AlterFieldAfter  string // 将字段修改到某个字段之后
 	ChangeField      string // 修改字段
 	AlterKeyType     uint8  // 索引操作类型
 }

@@ -353,6 +353,12 @@ func packageFieldSql(col map[string]string) (sql string, err error) {
 	if col["Comment"] != "" {
 		sql += fmt.Sprintf(" COMMENT '%s'", col["Comment"])
 	}
+	if col["AlterFieldFirst"] == "true" {
+		sql += " FIRST"
+	}
+	if col["AlterFieldAfter"] != "" {
+		sql += fmt.Sprintf(" AFTER `%s`", col["AlterFieldAfter"])
+	}
 	return
 }
 
