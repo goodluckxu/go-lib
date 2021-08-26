@@ -65,7 +65,7 @@ func GetSql(filePath string, runType uint8) (sqlList []string, err error) {
 		if funcName != funcV[2] {
 			continue
 		}
-		regString = `migrate.(Create|Modify|Drop)Table *?\( *?"(\w*?)"(?s).*?\)`
+		regString = `migrate.(Create|Modify|Drop)Table *?\( *?"(\w*?)"(?s).*?\)\n`
 		reg = regexp.MustCompile(regString)
 		for _, migrateV := range reg.FindAllStringSubmatch(funcV[0], -1) {
 			myLine.SetLine(migrateV[0])
@@ -254,9 +254,9 @@ func getColumns(column string, args bool) (rs []map[string]string, err error) {
 	for i := 0; i < columnValue.NumField(); i++ {
 		fieldMap[columnValue.Type().Field(i).Name] = ""
 	}
-	regString := `\[\]migrate.Column *?\{((?s).*)\}\)`
+	regString := `\[(?s).*?\] *?migrate.Column *?\{((?s).*)\} *?\)`
 	if args {
-		regString = `\[\]migrate.Column *?\{((?s).*)\} *?, *?migrate.Args`
+		regString = `\[(?s).*?\] *?migrate.Column *?\{((?s).*) *?\} *?, *?migrate.Args`
 	}
 	myLine := Line{}
 	reg := regexp.MustCompile(regString)
@@ -418,5 +418,5 @@ func readAll(filePath string) (string, error) {
 
 func Error(err string, args ...interface{}) error {
 	err = fmt.Sprintf(err, args...)
-	return fmt.Errorf("file: %s, line: %d, Error: %s", FilePath, LastLineNum, err)
+	return fmt.Errorf("line: %d, Error: %s", LastLineNum, err)
 }
