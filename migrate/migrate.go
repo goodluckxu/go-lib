@@ -28,7 +28,7 @@ func GetSql(filePath string, runType uint8) (sqlList []string, err error) {
 	myLine := Line{
 		filePath: filePath,
 	}
-	regString := `type *?(\w*?) *?struct *?\{(?s).*?\}`
+	regString := `type( |\t|\n)+?(\w*?)( |\t)+?struct( |\t|\n)*?\{(?s).*?\}`
 	reg := regexp.MustCompile(regString)
 	list := reg.FindAllStringSubmatch(fileContent, -1)
 	if len(list) == 0 {
@@ -39,7 +39,7 @@ func GetSql(filePath string, runType uint8) (sqlList []string, err error) {
 		err = Error("struct has %d quantities, but only 1 is required", len(list))
 		return
 	}
-	tableStruct := list[0][1]
+	tableStruct := list[0][2]
 	myLine.SetLine(list[0][0])
 	funcName := ""
 	if runType == RunType.Up {
@@ -50,42 +50,42 @@ func GetSql(filePath string, runType uint8) (sqlList []string, err error) {
 		err = errors.New("Parameter 'runType' of method 'GetSql' must be in migrate.RunType")
 		return
 	}
-	regString = `func *?\(\w *?(\w+) *?\) *?(\w+) *?\( *?\) *? \{ *?\n(?s).*?\}\n *`
+	regString = `func( |\t|\n)*?\(\w+( |\t)*(\w+)( |\t)*?\)( |\t)*?(\w+)( |\t)*?\(( |\t|\n)*?\)( |\t)*?\{(?s).*?\}( |\t)*\n`
 	reg = regexp.MustCompile(regString)
 	for _, funcV := range reg.FindAllStringSubmatch(fileContent, -1) {
 		myLine.SetLine(funcV[0])
-		if tableStruct != funcV[1] {
-			err = Error("struct '%s' is different from '%s'", funcV[1], tableStruct)
+		if tableStruct != funcV[3] {
+			err = Error("struct '%s' is different from '%s'", funcV[3], tableStruct)
 			return
 		}
-		if funcV[2] != "Up" && funcV[2] != "Down" {
-			err = Error("func '%s' must be Up or Down", funcV[2])
+		if funcV[6] != "Up" && funcV[6] != "Down" {
+			err = Error("func '%s' must be Up or Down", funcV[6])
 			return
 		}
-		if funcName != funcV[2] {
+		if funcName != funcV[6] {
 			continue
 		}
-		regString = `migrate.(Create|Modify|Drop)Table *?\( *?"(\w*?)"(?s).*?\)\n`
+		regString = `migrate.(Create|Modify|Drop)Table( |\t)*?\(( |\t|\n)*?"(\w*?)"(?s).*?\)( |\t)*(\n|})`
 		reg = regexp.MustCompile(regString)
 		for _, migrateV := range reg.FindAllStringSubmatch(funcV[0], -1) {
 			myLine.SetLine(migrateV[0])
 			switch migrateV[1] {
 			case "Create":
 				sql := ""
-				if sql, err = getCreateTableSql(migrateV[2], migrateV[0]); err != nil {
+				if sql, err = getCreateTableSql(migrateV[4], migrateV[0]); err != nil {
 					return
 				}
 				sqlList = append(sqlList, sql)
 			case "Modify":
 				tpSql := []string{}
-				if tpSql, err = getModifyTableSql(migrateV[2], migrateV[0]); err != nil {
+				if tpSql, err = getModifyTableSql(migrateV[4], migrateV[0]); err != nil {
 					return
 				}
 				for _, sql := range tpSql {
 					sqlList = append(sqlList, sql)
 				}
 			case "Drop":
-				sqlList = append(sqlList, getDropTableSql(migrateV[2]))
+				sqlList = append(sqlList, getDropTableSql(migrateV[4]))
 			}
 		}
 	}
@@ -254,9 +254,9 @@ func getColumns(column string, args bool) (rs []map[string]string, err error) {
 	for i := 0; i < columnValue.NumField(); i++ {
 		fieldMap[columnValue.Type().Field(i).Name] = ""
 	}
-	regString := `\[( |\n|\t)*?\] *?migrate.Column *?\{((?s).*)\} *?\)`
+	regString := `\[( |\n|\t)*?\]( |\t)*?migrate.Column( |\t)*?\{((?s).*) *?\}( |\t)*?\)( |\t)*(\n|\})`
 	if args {
-		regString = `\[( |\n|\t)*?\] *?migrate.Column *?\{((?s).*) *?\} *?, *?migrate.Args`
+		regString = `\[( |\n|\t)*?\]( |\t)*?migrate.Column( |\t)*?\{((?s).*) *?\}( |\t)*?,( |\t|\n)*?migrate.Args`
 	}
 	myLine := Line{}
 	reg := regexp.MustCompile(regString)
@@ -268,7 +268,7 @@ func getColumns(column string, args bool) (rs []map[string]string, err error) {
 	myLine.SetLine(list[0])
 	regString = `\{((?s).*?)\}`
 	reg = regexp.MustCompile(regString)
-	for _, col := range reg.FindAllStringSubmatch(list[2], -1) {
+	for _, col := range reg.FindAllStringSubmatch(list[4], -1) {
 		myLine.SetLine(col[0])
 		list = []string{}
 		mList := strings.Split(col[1], ":")
