@@ -254,9 +254,9 @@ func getColumns(column string, args bool) (rs []map[string]string, err error) {
 	for i := 0; i < columnValue.NumField(); i++ {
 		fieldMap[columnValue.Type().Field(i).Name] = ""
 	}
-	regString := `\[(?s).*?\] *?migrate.Column *?\{((?s).*)\} *?\)`
+	regString := `\[( |\n|\t)*?\] *?migrate.Column *?\{((?s).*)\} *?\)`
 	if args {
-		regString = `\[(?s).*?\] *?migrate.Column *?\{((?s).*) *?\} *?, *?migrate.Args`
+		regString = `\[( |\n|\t)*?\] *?migrate.Column *?\{((?s).*) *?\} *?, *?migrate.Args`
 	}
 	myLine := Line{}
 	reg := regexp.MustCompile(regString)
@@ -268,7 +268,7 @@ func getColumns(column string, args bool) (rs []map[string]string, err error) {
 	myLine.SetLine(list[0])
 	regString = `\{((?s).*?)\}`
 	reg = regexp.MustCompile(regString)
-	for _, col := range reg.FindAllStringSubmatch(list[1], -1) {
+	for _, col := range reg.FindAllStringSubmatch(list[2], -1) {
 		myLine.SetLine(col[0])
 		list = []string{}
 		mList := strings.Split(col[1], ":")
