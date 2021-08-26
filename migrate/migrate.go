@@ -214,7 +214,7 @@ func getArgs(column string) (rs map[string]string, err error) {
 		fieldMap[columnValue.Type().Field(i).Name] = ""
 	}
 	rs = map[string]string{}
-	regString := `migrate.Args *?\{((?s).*?)\}`
+	regString := `migrate.Args( |\t)*?\{((?s).*?)\}`
 	reg := regexp.MustCompile(regString)
 	list := reg.FindStringSubmatch(column)
 	if len(list) == 0 {
@@ -222,7 +222,7 @@ func getArgs(column string) (rs map[string]string, err error) {
 		return
 	}
 	new(Line).SetLine(list[0])
-	argsString := list[1]
+	argsString := list[2]
 	for _, argString := range strings.Split(argsString, ",") {
 		argString = strings.Trim(argString, "\n\t ")
 		if argString == "" {
