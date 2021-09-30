@@ -409,6 +409,7 @@ func readAll(filePath string) (string, error) {
 		return "", err
 	}
 	content := string(by)
+	content = strings.ReplaceAll(content, "\r\n", "\n")
 	reg := regexp.MustCompile(`//.*`)
 	content = reg.ReplaceAllString(content, "")
 	reg = regexp.MustCompile(`/\*(?s).*?\*/`)
