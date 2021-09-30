@@ -89,7 +89,8 @@ var KeyType keyType
 var KeyFunc keyFunc
 var AlterFieldType alterFieldType
 var AlterKeyType alterKeyType
-var FilePath string
+var Content string
+var LineList [][]interface{}
 var LastLineNum int
 
 func init() {

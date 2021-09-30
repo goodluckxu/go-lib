@@ -25,9 +25,9 @@ func GetSql(filePath string, runType uint8) (sqlList []string, err error) {
 	if err != nil {
 		return
 	}
-	myLine := Line{
-		filePath: filePath,
-	}
+	Content = fileContent
+	fileContent = filterNotes(fileContent)
+	myLine := Line{}
 	regString := `type( |\t|\n)+?(\w*?)( |\t)+?struct( |\t|\n)*?\{(?s).*?\}`
 	reg := regexp.MustCompile(regString)
 	list := reg.FindAllStringSubmatch(fileContent, -1)
@@ -411,11 +411,15 @@ func readAll(filePath string) (string, error) {
 	content := string(by)
 	content = strings.ReplaceAll(content, "\r\n", "\n")
 	content = strings.ReplaceAll(content, "\r", "\n")
+	return content, nil
+}
+
+func filterNotes(content string) string {
 	reg := regexp.MustCompile(`//.*`)
 	content = reg.ReplaceAllString(content, "")
 	reg = regexp.MustCompile(`/\*(?s).*?\*/`)
 	content = reg.ReplaceAllString(content, "")
-	return content, nil
+	return content
 }
 
 func Error(err string, args ...interface{}) error {
