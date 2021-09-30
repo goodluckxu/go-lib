@@ -1,7 +1,7 @@
 package migrate
 
 import (
-	"bufio"
+	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -46,15 +46,17 @@ func (l *Line) getLineList() {
 		FilePath = l.filePath
 	}
 	f, _ := os.Open(FilePath)
+	defer f.Close()
 	l.lineList = l.readFileList(f)
 }
 
 func (l *Line) readFileList(f *os.File) (rs [][]interface{}) {
-	input := bufio.NewScanner(f)
-	num := 1
-	for input.Scan() {
-		rs = append(rs, []interface{}{num, input.Text()})
-		num++
+	by, _ := ioutil.ReadAll(f)
+	content := string(by)
+	content = strings.ReplaceAll(content, "\r\n", "\n")
+	content = strings.ReplaceAll(content, "\r", "\n")
+	for index, lineText := range strings.Split(content, "\n") {
+		rs = append(rs, []interface{}{index + 1, lineText})
 	}
 	return
 }
