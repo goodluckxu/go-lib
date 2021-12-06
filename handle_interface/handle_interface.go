@@ -21,9 +21,7 @@ type Rule struct {
 //    updates []Rule{{FindField:"",UpdateValue:interface{}{},Type:""}}
 //    result   返回修改的内容
 func UpdateInterface(data interface{}, updates []Rule) interface{} {
-	dataByte, _ := json.Marshal(data)
-	var newData interface{}
-	_ = json.Unmarshal(dataByte, &newData)
+	var newData = interfaceToSliceOrMap(data)
 	for _, update := range updates {
 		switch update.Type {
 		case "*":
@@ -48,9 +46,7 @@ func UpdateInterface(data interface{}, updates []Rule) interface{} {
 //       1. 里面的.表示层级，*表示数组，如：a.*.b.c表示，a的map下面有数组，数组里的map有b，b的map有c
 //       2. 如果获取使用*获取内容，则将*下面的内容合并成一个数组，如果*下面的内容不为数组，则返回一位数组
 func GetInterface(data interface{}, findField string) interface{} {
-	dataByte, _ := json.Marshal(data)
-	var newData interface{}
-	_ = json.Unmarshal(dataByte, &newData)
+	newData := interfaceToSliceOrMap(data)
 	return getUniversalInterface(newData, findField)
 }
 
@@ -118,9 +114,6 @@ func getUniversalInterface(data interface{}, findField string) interface{} {
 
 // 修改内部数据
 func updateInsideInterface(data interface{}, findField string, updateValue string) interface{} {
-	dataByte, _ := json.Marshal(data)
-	var newData interface{}
-	_ = json.Unmarshal(dataByte, &newData)
 	inputFindField := findField
 	findFieldList := strings.Split(findField, ".")
 	updateValueList := strings.Split(updateValue, ".")
@@ -154,12 +147,12 @@ func updateInsideInterface(data interface{}, findField string, updateValue strin
 			if updateValue != "" {
 				newUpdateValue += "." + updateValue
 			}
-			newData = updateUniversalInterface(newData, newFindField, GetInterface(data, newUpdateValue))
+			data = updateUniversalInterface(data, newFindField, GetInterface(data, newUpdateValue))
 		}
 	} else {
-		newData = updateUniversalInterface(newData, inputFindField, GetInterface(data, updateValue))
+		data = updateUniversalInterface(data, inputFindField, GetInterface(data, updateValue))
 	}
-	return newData
+	return data
 }
 
 func updateInsideCommonInterface(data interface{}, commonField string, list []string) []string {
@@ -373,4 +366,22 @@ func isInt(value string) bool {
 func isSlice(value interface{}) bool {
 	_, ok := value.([]interface{})
 	return ok
+}
+
+func interfaceToSliceOrMap(data interface{}) interface{} {
+	var newData interface{}
+	switch data.(type) {
+	case map[string]interface{}, []interface{}:
+		newData = data
+	case []map[string]interface{}:
+		var dataList []interface{}
+		for _, v := range data.([]map[string]interface{}) {
+			dataList = append(dataList, v)
+		}
+		newData = dataList
+	default:
+		dataByte, _ := json.Marshal(data)
+		_ = json.Unmarshal(dataByte, &newData)
+	}
+	return newData
 }
