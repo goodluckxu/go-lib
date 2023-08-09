@@ -16,61 +16,32 @@ func New() *crontab {
 type crontab struct {
 }
 
-// 判断规则当前是否可执行
-// 规则为* * * * *形式linux模式
-func (c crontab) IsRun(rules string, args ...BeforeTime) bool {
+// IsRun 判断规则当前是否可执行
+// 规则为 * * * * * 形式linux模式
+func (c crontab) IsRun(rules string, beforeTime *time.Time) bool {
 	minuteList, hourList, dayList, monthList, weekList, err := c.parse(rules)
 	if err != nil {
 		return false
 	}
-	var beforeMinute, beforeHour, beforeDay, beforeMonth, beforeWeek int64
-	var compareTypes []uint8
-	if len(args) > 0 {
-		beforeMinute, beforeHour, beforeDay, beforeMonth, beforeWeek = c.timeSeparate(args[0].Time)
-		compareTypes = args[0].CompareTypes
-	}
+	// 判断当前时间是否满足
 	minute, hour, day, month, week := c.timeSeparate(time.Now())
-	if len(compareTypes) > 0 {
-		isEqual := true
-		for _, compareType := range compareTypes {
-			if compareType == CrontabType.Minute && minute != beforeMinute {
-				isEqual = false
-				break
-			}
-			if compareType == CrontabType.Hour && hour != beforeHour {
-				isEqual = false
-				break
-			}
-			if compareType == CrontabType.Day && day != beforeDay {
-				isEqual = false
-				break
-			}
-			if compareType == CrontabType.Month && month != beforeMonth {
-				isEqual = false
-				break
-			}
-			if compareType == CrontabType.Week && week != beforeWeek {
-				isEqual = false
-				break
-			}
-		}
-		if isEqual {
-			return false
-		}
-	} else {
-		if minute == beforeMinute && hour == beforeHour &&
-			day == beforeDay && month == beforeMonth && week == beforeWeek {
-			return false
-		}
-	}
-	if c.inArrayInt64(minute, minuteList) &&
+	if !(c.inArrayInt64(minute, minuteList) &&
 		c.inArrayInt64(hour, hourList) &&
 		c.inArrayInt64(day, dayList) &&
 		c.inArrayInt64(month, monthList) &&
-		c.inArrayInt64(week, weekList) {
+		c.inArrayInt64(week, weekList)) {
+		return false
+	}
+	// 判断前时间是否已经运行
+	if beforeTime == nil {
 		return true
 	}
-	return false
+	beforeMinute, beforeHour, beforeDay, beforeMonth, beforeWeek := c.timeSeparate(*beforeTime)
+	if minute == beforeMinute && hour == beforeHour &&
+		day == beforeDay && month == beforeMonth && week == beforeWeek {
+		return false
+	}
+	return true
 }
 
 // 解析* * * * *类型定时任务
@@ -129,22 +100,22 @@ func (c crontab) parse(rules string) (minute, hour, day, month, week []int64, er
 }
 
 func (c crontab) parseMinute(rule string) ([]int64, error) {
-	return c.parseSingle(rule, CrontabType.Minute)
+	return c.parseSingle(rule, crontabType.Minute)
 }
 
 func (c crontab) parseHour(rule string) ([]int64, error) {
-	return c.parseSingle(rule, CrontabType.Hour)
+	return c.parseSingle(rule, crontabType.Hour)
 }
 
 func (c crontab) parseDay(rule string) ([]int64, error) {
-	return c.parseSingle(rule, CrontabType.Day)
+	return c.parseSingle(rule, crontabType.Day)
 }
 func (c crontab) parseMonth(rule string) ([]int64, error) {
-	return c.parseSingle(rule, CrontabType.Month)
+	return c.parseSingle(rule, crontabType.Month)
 }
 
 func (c crontab) parseWeek(rule string) ([]int64, error) {
-	return c.parseSingle(rule, CrontabType.Week)
+	return c.parseSingle(rule, crontabType.Week)
 }
 
 func (c crontab) parseSingle(rule string, crontabType uint8) (rs []int64, rsErr error) {
@@ -282,20 +253,20 @@ func (c crontab) between(between Between, list *[]int64, crontabType uint8) (rsE
 	return
 }
 
-func (c crontab) getMaxBetween(crontabType uint8) Between {
+func (c crontab) getMaxBetween(ct uint8) Between {
 	var start int64
 	var end int64
-	switch crontabType {
-	case CrontabType.Minute, CrontabType.Hour:
+	switch ct {
+	case crontabType.Minute, crontabType.Hour:
 		start = 0
 		end = 60
-	case CrontabType.Day:
+	case crontabType.Day:
 		start = 1
 		end = 31
-	case CrontabType.Month:
+	case crontabType.Month:
 		start = 1
 		end = 12
-	case CrontabType.Week:
+	case crontabType.Week:
 		start = 0
 		end = 6
 	}

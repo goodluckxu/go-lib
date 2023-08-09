@@ -1,5 +1,5 @@
 # lib
-模块 [handle_interface](#handle_interface),[crontab](#crontab),[migrate](#migrate)
+模块 [handle_interface](#handle_interface),[crontab](#crontab)
 
 ## 模块 <a id="handle_interface">handle_interface</a>
 ~~~go
@@ -121,42 +121,8 @@ fmt.Println(a)
 
 ## 模块 <a id="crontab">crontab</a>
 ~~~go
-fmt.Println(crontab.New().IsRun("0,18 */1 * * */2", crontab.BeforeTime{
-    Time: time.Now().Add(30 * time.Minute),
-    CompareTypes: []uint8{
-        crontab.CrontabType.Hour,
-        crontab.CrontabType.Minute,
-    },
-}))
-~~~
-
-## 模块 <a id="migrate">migrate</a>
-用法: key相关的为键的，目前只支持mysql生成
-
-运行 crontab/example的实例获取数据
-~~~sql
-CREATE TABLE `user` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `username` varchar(255) NOT NULL DEFAULT '' COMMENT '用户名',
-  `nickname` varchar(255) NULL COMMENT '昵称',
-  `account` varchar(20) NOT NULL COMMENT '账号',
-  `status` tinyint(1) NOT NULL COMMENT '状态',
-  `price` decimal(10,2) NOT NULL DEFAULT '0' COMMENT '价格',
-  PRIMARY KEY (`id`),
-  KEY `my_foreign` (`username`),
-  FULLTEXT KEY `nickname` (`nickname`),
-  UNIQUE KEY `my_unique` (`account`,`status`),
-  CONSTRAINT `user_center_user_my_foreign` FOREIGN KEY (`my_foreign`) REFERENCES `center_user` (`nick_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT '用户表'
-DROP TABLE `test`
-ALTER TABLE `user_info` ADD COLUMN `icon` varchar(255) COMMENT '图标' FIRST
-ALTER TABLE `user_info` MODIFY COLUMN `icon` varchar(255) COMMENT '图标' AFTER `id`
-ALTER TABLE `user_info` CHANGE COLUMN `icon` `icon_change` varchar(255) COMMENT '图标'
-ALTER TABLE `user_info` DROP COLUMN `icon`
-ALTER TABLE `user_info` ADD PRIMARY KEY (`id`)
-ALTER TABLE `user_info` DROP PRIMARY KEY
-ALTER TABLE `user_info` ADD UNIQUE KEY `test_1` (`test`)
-ALTER TABLE `user_info` DROP INDEX `test_1`
-ALTER TABLE `user_info` ADD CONSTRAINT `aaa` FOREIGN KEY (`name`) REFERENCES `admin` (`id`)
-ALTER TABLE `user_info` DROP CONSTRAINT `aaa`
+now := time.Now()
+beforeTime := time.Date(now.Year(), now.Month(), now.Day(), 18, 0, 0, 0, time.Local)
+b := crontab.New().IsRun("0 */1 * * *", &beforeTime)
+fmt.Println(b)
 ~~~
